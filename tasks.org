@@ -1,0 +1,117 @@
+#+title:    jmap-open-client — implementation tasks
+#+author:   Logan Barnett
+#+language: en
+#+startup:  showall
+
+* Background
+The published =jmap-client= crate (RFC 8620 / 8621) bakes the JMAP object set
+into a closed Rust enum, so non-mail extensions (Calendar, Contacts, Sieve,
+Stalwart =urn:stalwart:jmap=, etc.) can't be sent through it without forking.
+Stalwart's own =stalwart-cli= bypasses the crate entirely for that reason.
+Hugo Barrera's =libjmap= (sr.ht/~whynothugo/libjmap) is sans-I/O and panics
+on error paths — not usable as-is.
+
+This crate fixes the actual defect: model JMAP method calls generically over
+=(method: String, args: Value, call_id: String)= so any object type can be
+invoked, while keeping batteries-included =reqwest= I/O so consumers don't
+have to bring their own transport.
+
+References:
+- [[https://github.com/stalwartlabs/jmap-client/issues/8][stalwartlabs/jmap-client#8]] — maintainer confirms no lower-level API.
+- [[https://github.com/stalwartlabs/cli/tree/main/src/jmap][stalwartlabs/cli src/jmap]] — model to copy (license AGPL-3.0/SEL,
+  pattern-only, no vendoring).
+- [[https://git.sr.ht/~whynothugo/libjmap][~whynothugo/libjmap]] — prior art for the sans-I/O envelope shape.
+
+* TODO Crate-level groundwork
+- [ ] Decide which workspace deps survive from the rust-template default set
+  (axum/tower/aide/openidconnect are server-shaped and unused here).
+  Prune to: =serde=, =serde_json=, =thiserror=, =reqwest=, =tokio=,
+  =tracing=, =url=.  Keep =clap= for the CLI crate.
+- [ ] Add =reqwest= and =url= to ~[workspace.dependencies]~.
+- [ ] In =crates/lib/Cargo.toml=, wire the workspace deps the lib needs.
+- [ ] In =crates/cli/Cargo.toml=, depend on the lib + =clap=.
+
+* TODO Core envelope (=crates/lib/src/protocol.rs=)
+- [ ] =Request= struct: ~{ using: Vec<String>, method_calls: Vec<MethodCall>,
+  created_ids: Option<HashMap<String, String>> }~ — matches RFC 8620 §3.3.
+- [ ] =MethodCall= = tuple ~(String, serde_json::Value, String)~ serialized
+  as a JSON array of three elements (per RFC).  =serde(transparent)=
+  newtype around the tuple so it serializes as the array form JMAP requires.
+- [ ] =Response= struct: ~{ method_responses: Vec<MethodResponse>,
+  created_ids: Option<...>, session_state: String }~.
+- [ ] =MethodResponse= same tuple shape; first element is the method name
+  (=Object/get=, =Object/set=, =error=, ...).
+- [ ] Error-method-response handling: when first tuple element is ="error"=,
+  decode args into a typed =MethodError=.
+- [ ] Result-reference support (RFC 8620 §3.7) — fields prefixed with
+  =#= in args; expose a helper to build them.
+
+* TODO Session discovery (=crates/lib/src/session.rs=)
+- [ ] =Session= struct mirroring RFC 8620 §2: =api_url=, =download_url=,
+  =upload_url=, =event_source_url=, =primary_accounts=, =accounts=,
+  =capabilities=, =state=.
+- [ ] =Client::fetch_session(base_url)= → GET =/jmap/session=, returns
+  =Session=.  Auth-required.
+- [ ] Capability advertisement: helper to check whether a given =using=
+  URI (=urn:ietf:params:jmap:mail=, =urn:stalwart:jmap=, ...) is in the
+  server's =capabilities=.
+
+* TODO Transport (=crates/lib/src/transport.rs=)
+- [ ] =Client= built on =reqwest::Client=.
+- [ ] Auth: =AuthMethod::Bearer(String)= and =AuthMethod::Basic { user,
+  pass }=.  Applied as headers per request.
+- [ ] =Client::request(req: Request) -> Result<Response, JmapError>= —
+  POST to =api_url=, JSON in, JSON out, status-code mapping to error
+  variants (401 → =AuthFailed=, 400 → =BadRequest=, etc.).
+- [ ] No =.unwrap()= / =.expect()= anywhere outside =#[cfg(test)]=.
+- [ ] No =panic!= — workspace-level clippy denies it already; verify the
+  lib opts in via ~[lints] workspace = true~ in =crates/lib/Cargo.toml=.
+
+* TODO Open-extension surface (=crates/lib/src/types.rs=)
+The whole point of this crate: callers add their own typed wrappers around
+the generic envelope without forking us.
+- [ ] Document the pattern: define =MyObjectGet { /* args */ }=, serialize
+  to =Value=, build a =MethodCall=, send via =Client::request=.  Provide
+  one worked example in the rustdoc.
+- [ ] Helpers: =MethodCall::new(method, args, call_id)= taking anything
+  =Serialize=, doing the =serde_json::to_value= internally.
+- [ ] No object-specific types in this crate.  Mail / Calendar / Stalwart
+  types live in downstream crates (=jmap-mail=, =jmap-stalwart=, etc.) if
+  anyone writes them.
+
+* TODO Streaming surfaces (lower priority)
+- [ ] =EventSource= (SSE) for =/jmap/eventsource=.  Used by Stalwart for
+  delivery/queue live streams.  Wrap =reqwest-eventsource= or hand-roll.
+- [ ] WebSocket push (RFC 8887) — defer until a consumer actually needs it.
+
+* TODO CLI (=crates/cli/=)
+The CLI is mostly a thin debugging tool: log in, fetch session, invoke an
+arbitrary =Object/method= with JSON args from stdin or a file, pretty-print
+the response.  Mirrors the shape of =stalwart-cli= but unopinionated about
+which JMAP server you're talking to.
+- [ ] =jmap-open-client session= — print the session JSON.
+- [ ] =jmap-open-client call <method>= — read JSON args from stdin, build
+  a single-method request, print the response.
+- [ ] =jmap-open-client batch <file>= — full =Request= from a file (lets
+  you script multi-method calls with result references).
+- [ ] Config: server URL + auth (env vars + flags), via =foundation= config.
+
+* TODO Tests
+- [ ] Unit tests for =Request= / =Response= round-trip serialization
+  against canned JSON fixtures from RFC 8620 §3 examples.
+- [ ] Integration test using =mockito= or =wiremock= for the
+  fetch-session and POST-request paths.
+- [ ] (Later) Optional integration test against a real Stalwart instance
+  behind an env-var gate.
+
+* TODO Docs
+- [ ] =README.org=: positioning vs. =jmap-client= and =libjmap=, basic
+  usage example.
+- [ ] Rustdoc for every public item.  Examples for the open-extension
+  pattern.
+
+* TODO Eventual: publish to crates.io
+- [ ] Bump to =0.1.0= release, fill =[package.metadata.docs.rs]=, run
+  =cargo publish --dry-run=, then publish lib first then cli.
+- [ ] CI publish workflow is already emitted by the template
+  (=.github/workflows/=); confirm it works.
