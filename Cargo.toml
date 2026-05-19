@@ -1,0 +1,134 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/lib",
+    "crates/cli",
+    # CRATE_MEMBERS
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Logan Barnett <logustus@gmail.com>"]
+license = "AGPL-3.0-or-later"
+repository = "https://github.com/LoganBarnett/jmap-open-client"
+
+[workspace.dependencies]
+# Foundation infrastructure crate (config, logging, health, metrics, auth).
+rust-template-foundation = { git = "https://github.com/LoganBarnett/rust-template.git" }
+
+# Logging and tracing
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json", "fmt"] }
+
+# Utilities
+# tap - Enables method chaining and reduces superfluous local variables
+# that only exist to name intermediate results. Prefer .tap() over temporary
+# variables when it improves readability.
+tap = "1.0"
+
+# CLI parsing
+clap = { version = "4.5", features = ["derive", "env"] }
+
+# Configuration
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+toml = "0.8"
+
+# Error handling
+thiserror = "2.0"
+
+# Web framework
+axum = "0.8"
+tokio = { version = "1.41", features = ["full"] }
+tokio-listener = { version = "0.5", features = ["axum08"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["trace", "cors", "fs", "set-header"] }
+
+# Testing
+tempfile = "3"
+
+# OpenMetrics/Prometheus
+prometheus = "0.13"
+
+# OpenAPI (re-exported by foundation, but needed for ApiRouter in app code)
+aide = { version = "0.15", features = ["axum", "axum-json", "axum-query", "scalar", "macros"] }
+schemars = "0.9"
+
+# Authentication (re-exported by foundation, needed for CoreClient type in app)
+openidconnect = { version = "3", features = ["reqwest"] }
+tower-sessions = { version = "0.15", features = ["memory-store"] }
+
+# Shared library
+jmap-open-client-lib = { path = "crates/lib" }
+# WORKSPACE_DEPS
+
+# ============================================================================
+# BUILD PROFILES
+# ============================================================================
+# Without these settings, target/debug can easily reach 20-40 GB on
+# non-trivial projects.  Dependencies are the primary culprit.
+#
+# See https://doc.rust-lang.org/cargo/reference/profiles.html
+
+[profile.dev]
+# No debug symbols.  The debugger is rarely used and debug symbols are
+# the single largest contributor to target/ bloat.
+debug = false
+# Disable incremental compilation.  Incremental writes many small files
+# to target/debug/incremental/ that accumulate quickly; the compile-time
+# benefit rarely outweighs the disk cost for typical workflows.
+incremental = false
+
+[profile.dev.package."*"]
+# Optimize dependencies even in dev builds.  Libraries like tokio and
+# axum are bottlenecks when unoptimized; this makes the program run at
+# near-release speed during development with minimal extra compile time
+# on subsequent incremental builds.
+opt-level = 3
+
+[profile.release]
+debug = false
+
+# ============================================================================
+# LINTS
+# ============================================================================
+# Project-wide ban on the panicking variants of Result/Option, enforced
+# via clippy.  Test code is exempted by clippy.toml's
+# allow-unwrap-in-tests / allow-expect-in-tests, which cover both
+# #[cfg(test)] modules in src/ and integration tests under tests/.
+# Member crates opt in by setting [lints] workspace = true.
+[workspace.lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+
+# ----------------------------------------------------------------------------
+# Combinator preference: nudge toward the least powerful construct that
+# fits.  These flag manual reimplementations of standard combinators —
+# match-on-Option that could be Option::map, if-let-else that could be
+# map_or, and so on.  See llms.org "Rule of least power" for the
+# principle behind the set.
+#
+# Configured at "warn" rather than "deny" because some imperative forms
+# are genuinely clearer (multi-line bodies, side effects, nested control
+# flow); humans can override site-locally with #[allow(...)] and a
+# one-line reason.  The defaults push agents toward the combinator form.
+manual_map = "warn"
+manual_filter = "warn"
+manual_filter_map = "warn"
+manual_find = "warn"
+manual_find_map = "warn"
+manual_flatten = "warn"
+manual_let_else = "warn"
+manual_ok_or = "warn"
+manual_unwrap_or = "warn"
+manual_unwrap_or_default = "warn"
+option_if_let_else = "warn"
+map_unwrap_or = "warn"
+needless_collect = "warn"
+unnecessary_fold = "warn"
+question_mark = "warn"
+single_match_else = "warn"
+collapsible_match = "warn"
+redundant_pattern_matching = "warn"

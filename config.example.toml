@@ -1,0 +1,17 @@
+# Example configuration file for jmap-open-client applications
+#
+# Searched in order:
+#   1. --config / $<app>_config       (explicit; e.g. $jmap_open_client_config)
+#   2. ./config.toml                  (working directory)
+#   3. $XDG_CONFIG_HOME/jmap-open-client/config.toml
+#      (default: ~/.config/jmap-open-client/config.toml)
+#
+# Env-var names follow <app>_<flag> in lowercase — see
+# crates/foundation/USAGE.org "Environment variables" for the rule.
+
+# Logging configuration
+log_level = "info"  # Options: trace, debug, info, warn, error
+log_format = "text"  # Options: text, json
+
+# CLI-specific options
+# name = "World"

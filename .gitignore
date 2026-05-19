@@ -1,0 +1,18 @@
+# Before adding things like .DS_Store, ignores for your editors, etc, consider
+# instead to use a global git ignore. This keeps the ignores here clean, and
+# specific to this project - not your text editor, OS, or other tooling.
+#
+# Attempts to ignore files specific to your configuration will be rejected.
+#
+# Please justify all ignore entries with comments.
+
+# Ignore cargo generated build artifacts.
+target/
+
+# Claude Code project config (Stop hook, compliance subagent, shared settings)
+# is part of the project and must be checked in.  A user-global or system-wide
+# ignore (e.g. /etc/gitignore) often excludes .claude/ wholesale; re-include
+# it.  Personal overrides go in .claude/settings.local.json, which Claude Code
+# itself treats as the local-only file — that one stays ignored below.
+!.claude/
+.claude/settings.local.json

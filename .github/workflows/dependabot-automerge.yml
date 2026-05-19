@@ -1,0 +1,14 @@
+name: Dependabot auto-merge
+
+on:
+  pull_request:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  automerge:
+    if: github.actor == 'dependabot[bot]'
+    uses: LoganBarnett/rust-template/.github/workflows/reusable-dependabot-automerge.yml@main
+    secrets: inherit
