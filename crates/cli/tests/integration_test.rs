@@ -62,8 +62,8 @@ fn test_version_flag() {
       );
       let stdout = String::from_utf8_lossy(&output.stdout);
       assert!(
-        stdout.contains("jmap-open-client-cli"),
-        "Expected version text to contain 'jmap-open-client-cli', got: {}",
+        stdout.contains("jmap-open-client"),
+        "Expected version text to contain 'jmap-open-client', got: {}",
         stdout
       );
     }
