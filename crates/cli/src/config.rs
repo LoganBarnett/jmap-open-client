@@ -1,4 +1,4 @@
-use jmap_open_client_lib::{LogFormat, LogLevel};
+use rust_template_foundation::prelude::{LogFormat, LogLevel};
 use rust_template_foundation::MergeConfig;
 
 #[derive(Debug, Clone, MergeConfig)]

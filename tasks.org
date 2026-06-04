@@ -27,23 +27,26 @@ References:
       (axum/tower/aide/openidconnect are server-shaped and unused here).  Prune
       to: =serde=, =serde_json=, =thiserror=, =reqwest=, =tokio=, =tracing=,
       =url=.  Keep =clap= for the CLI crate.
-- [ ] Add =reqwest= and =url= to ~[workspace.dependencies]~.
-- [ ] In =crates/lib/Cargo.toml=, wire the workspace deps the lib needs.
-- [ ] In =crates/cli/Cargo.toml=, depend on the lib + =clap=.
+- [ ] Add =reqwest= and =url= to ~[workspace.dependencies]~.  Deferred until
+      transport.rs needs them.
+- [X] In =crates/lib/Cargo.toml=, wire the workspace deps the lib needs.
+      =serde_json= added; =reqwest=/=url= deferred to transport phase.
+- [X] In =crates/cli/Cargo.toml=, depend on the lib + =clap=.  Already wired by
+      the scaffold.
 
-* TODO Core envelope (=crates/lib/src/protocol.rs=)
-- [ ] =Request= struct: ~{ using: Vec<String>, method_calls: Vec<MethodCall>,
+* DONE Core envelope (=crates/lib/src/protocol.rs=)
+- [X] =Request= struct: ~{ using: Vec<String>, method_calls: Vec<MethodCall>,
       created_ids: Option<HashMap<String, String>> }~ — matches RFC 8620 §3.3.
-- [ ] =MethodCall= = tuple ~(String, serde_json::Value, String)~ serialized as a
+- [X] =MethodCall= = tuple ~(String, serde_json::Value, String)~ serialized as a
       JSON array of three elements (per RFC).  =serde(transparent)= newtype
       around the tuple so it serializes as the array form JMAP requires.
-- [ ] =Response= struct: ~{ method_responses: Vec<MethodResponse>, created_ids:
+- [X] =Response= struct: ~{ method_responses: Vec<MethodResponse>, created_ids:
       Option<...>, session_state: String }~.
-- [ ] =MethodResponse= same tuple shape; first element is the method name
+- [X] =MethodResponse= same tuple shape; first element is the method name
       (=Object/get=, =Object/set=, =error=, ...).
-- [ ] Error-method-response handling: when first tuple element is ="error"=,
+- [X] Error-method-response handling: when first tuple element is ="error"=,
       decode args into a typed =MethodError=.
-- [ ] Result-reference support (RFC 8620 §3.7) — fields prefixed with =#= in
+- [X] Result-reference support (RFC 8620 §3.7) — fields prefixed with =#= in
       args; expose a helper to build them.
 
 * TODO Session discovery (=crates/lib/src/session.rs=)
@@ -87,8 +90,8 @@ generic envelope without forking us.
 * TODO CLI (=crates/cli/=)
 The CLI is mostly a thin debugging tool: log in, fetch session, invoke an
 arbitrary =Object/method= with JSON args from stdin or a file, pretty-print the
-response.  Mirrors the shape of =stalwart-cli= but unopinionated about which
-JMAP server you're talking to.
+response. Mirrors the shape of =stalwart-cli= but unopinionated about which JMAP
+          server you're talking to.
 - [ ] =jmap-open-client session= — print the session JSON.
 - [ ] =jmap-open-client call <method>= — read JSON args from stdin, build a
       single-method request, print the response.

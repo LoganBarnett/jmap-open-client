@@ -2,4 +2,11 @@
 #+language:  en
 
 * Upcoming
-
+** Added
+- The JMAP wire-protocol envelope at =jmap_open_client_lib::protocol=, per RFC
+  8620 §3.  Public types: =Request=, =MethodCall=, =Response=, =MethodResponse=,
+  =MethodError=, =ResultReference=.  Method arguments are typed only at the
+  serde layer (=serde_json::Value=), so any JMAP extension — RFC 8621 mail, the
+  Calendars draft, vendor surfaces like Stalwart's =urn:stalwart:jmap= — can be
+  invoked through the same envelope without modifying this crate.  See the
+  =protocol= module docs for the open-extension pattern.

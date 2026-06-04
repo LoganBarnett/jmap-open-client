@@ -188,6 +188,7 @@ dependencies = [
  "cargo-husky",
  "rust-template-foundation",
  "serde",
+ "serde_json",
  "tap",
  "thiserror",
  "tracing",
