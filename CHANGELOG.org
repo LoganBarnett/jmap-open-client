@@ -10,3 +10,8 @@
   Calendars draft, vendor surfaces like Stalwart's =urn:stalwart:jmap= — can be
   invoked through the same envelope without modifying this crate.  See the
   =protocol= module docs for the open-extension pattern.
+** Fixes
+- The =protocol= module's doctest used =.unwrap()= on the visible call to
+  =MethodCall::new=, modelling an anti-pattern users would copy.  Restructured
+  with a hidden =fn main() -> Result<...>= harness so the visible line uses =?=
+  and teaches the right pattern.

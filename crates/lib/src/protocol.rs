@@ -14,6 +14,7 @@
 //! envelope:
 //!
 //! ```
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! use jmap_open_client_lib::protocol::{MethodCall, Request};
 //! use serde::Serialize;
 //!
@@ -30,7 +31,9 @@
 //! };
 //!
 //! let mut request = Request::new(["urn:ietf:params:jmap:mail"]);
-//! request.push(MethodCall::new("Mailbox/get", &args, "0").unwrap());
+//! request.push(MethodCall::new("Mailbox/get", &args, "0")?);
+//! # Ok(())
+//! # }
 //! ```
 //!
 //! The same pattern carries Stalwart's management types
