@@ -12,10 +12,11 @@ edition = "2021"
 authors = ["Logan Barnett <logustus@gmail.com>"]
 license = "AGPL-3.0-or-later"
 repository = "https://github.com/LoganBarnett/jmap-open-client"
+description = "Open, extensible JMAP client for Rust"
 
 [workspace.dependencies]
 # Foundation infrastructure crate (config, logging, health, metrics, auth).
-rust-template-foundation = { git = "https://github.com/LoganBarnett/rust-template.git" }
+rust-template-foundation = { git = "https://github.com/LoganBarnett/rust-template.git", version = "0.6" }
 
 # Logging and tracing
 tracing = "0.1"
